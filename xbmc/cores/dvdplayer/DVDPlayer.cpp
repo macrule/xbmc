@@ -137,6 +137,13 @@ std::vector<SelectionStream> CSelectionStreams::Get(StreamType type)
       return (lh) > (rh); \
   } while(0)
 
+static CStdString ExpandedLangugeCode(const CStdString& lang)
+{
+  CStdString expandedLang;
+  g_LangCodeExpander.Lookup(expandedLang, lang);
+  return expandedLang;
+}
+
 static bool PredicateAudioPriority(const SelectionStream& lh, const SelectionStream& rh)
 {
   PREDICATE_RETURN(lh.type_index == CMediaSettings::Get().GetCurrentVideoSettings().m_AudioStream
@@ -144,9 +151,9 @@ static bool PredicateAudioPriority(const SelectionStream& lh, const SelectionStr
 
   if(!StringUtils::EqualsNoCase(CSettings::Get().GetString("locale.audiolanguage"), "original"))
   {
-    CStdString audio_language = g_langInfo.GetAudioLanguage();
-    PREDICATE_RETURN(audio_language.Equals(lh.language.c_str())
-                   , audio_language.Equals(rh.language.c_str()));
+    CStdString audio_language = ExpandedLangugeCode(g_langInfo.GetAudioLanguage());
+    PREDICATE_RETURN(audio_language.Equals(ExpandedLangugeCode(lh.language))
+                   , audio_language.Equals(ExpandedLangugeCode(rh.language)));
   }
 
   PREDICATE_RETURN(lh.flags & CDemuxStream::FLAG_DEFAULT
@@ -171,11 +178,11 @@ static bool PredicateSubtitlePriority(const SelectionStream& lh, const Selection
   PREDICATE_RETURN(lh.type_index == CMediaSettings::Get().GetCurrentVideoSettings().m_SubtitleStream
                  , rh.type_index == CMediaSettings::Get().GetCurrentVideoSettings().m_SubtitleStream);
 
-  CStdString subtitle_language = g_langInfo.GetSubtitleLanguage();
-  if(!StringUtils::EqualsNoCase(CSettings::Get().GetString("locale.subtitlelanguage"), "original"))
+  CStdString subtitle_language = ExpandedLangugeCode(g_langInfo.GetSubtitleLanguage());
+  if(!g_guiSettings.GetString("locale.subtitlelanguage").Equals("original"))
   {
-    PREDICATE_RETURN((lh.source == STREAM_SOURCE_DEMUX_SUB || lh.source == STREAM_SOURCE_TEXT) && subtitle_language.Equals(lh.language.c_str())
-                   , (rh.source == STREAM_SOURCE_DEMUX_SUB || rh.source == STREAM_SOURCE_TEXT) && subtitle_language.Equals(rh.language.c_str()));
+    PREDICATE_RETURN((lh.source == STREAM_SOURCE_DEMUX_SUB || lh.source == STREAM_SOURCE_TEXT) && subtitle_language.Equals(ExpandedLangugeCode(lh.language))
+                   , (rh.source == STREAM_SOURCE_DEMUX_SUB || rh.source == STREAM_SOURCE_TEXT) && subtitle_language.Equals(ExpandedLangugeCode(rh.language)));
   }
 
   PREDICATE_RETURN(lh.source == STREAM_SOURCE_DEMUX_SUB
@@ -186,8 +193,8 @@ static bool PredicateSubtitlePriority(const SelectionStream& lh, const Selection
 
   if(!StringUtils::EqualsNoCase(CSettings::Get().GetString("locale.subtitlelanguage"), "original"))
   {
-    PREDICATE_RETURN(subtitle_language.Equals(lh.language.c_str())
-                   , subtitle_language.Equals(rh.language.c_str()));
+    PREDICATE_RETURN(subtitle_language.Equals(ExpandedLangugeCode(lh.language))
+                   , subtitle_language.Equals(ExpandedLangugeCode(rh.language)));
   }
 
   PREDICATE_RETURN(lh.flags & CDemuxStream::FLAG_DEFAULT
